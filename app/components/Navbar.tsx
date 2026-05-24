@@ -1,9 +1,16 @@
 import { Tooltip } from "./Tooltip";
 import Link from "next/link";
+import { auth } from "@/app/lib/auth";
+import { headers } from "next/headers";
+import { User } from "lucide-react";
 
-export default function Navbar() {
+export default async function Navbar() {
+  // ✅ Récupération de la session actuelle côté serveur
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   return (
-    <nav className="fixed top-0 left-0 right-0 mx-auto max-w-400 bg-white flex items-center justify-between border-b-white dark:border-b-white/10 dark:bg-black shadow-sm dark:shadow-gray-800">
+    <nav className="fixed m-2  top-0 left-0 right-0 mx-auto max-w-400 bg-white flex items-center justify-between border-b-white dark:border-b-white/10 dark:bg-black  dark:shadow-gray-800">
       <div className="flex items-center justify-around space-x-4 px-4 py-2 ">
         <Tooltip text="go to home">
           <Link href="/">
@@ -42,29 +49,50 @@ export default function Navbar() {
               </Link>
             </li>
           </Tooltip>
-          <Tooltip text="create post">
-            <li>
-              <Link
-                href="/create"
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
-              >
-                Create
-              </Link>
-            </li>
-          </Tooltip>
+
+          {/* ✅ N'affiche l'accès à la création de post que si l'utilisateur est connecté */}
+          {session && (
+            <Tooltip text="create post">
+              <li>
+                <Link
+                  href="/create"
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
+                >
+                  Create
+                </Link>
+              </li>
+            </Tooltip>
+          )}
         </ul>
       </div>
-      <div className="flex space-x-4 px-4 py-2">
-        <Tooltip text="Login">
-          <Link href="/login" className="btn-primary inline-block">
-            Login
-          </Link>
-        </Tooltip>
-        <Tooltip text="Sign Up">
-          <Link href="/signup" className="btn-secondary inline-block">
-            Sign Up
-          </Link>
-        </Tooltip>
+
+      <div className="flex space-x-4 px-4 py-2 items-center">
+        {session ? (
+          // ✅ Si l'utilisateur est connecté, on affiche le lien vers son profil
+          <Tooltip text="View Profile">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 text-sm font-medium border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
+            >
+              <User size={18} className="text-gray-400" />
+              {session.user.username || session.user.name}
+            </Link>
+          </Tooltip>
+        ) : (
+          // ❌ Si l'utilisateur n'est pas connecté, on montre les boutons Login / Sign Up
+          <>
+            <Tooltip text="Login">
+              <Link href="/login" className="btn-primary inline-block">
+                Login
+              </Link>
+            </Tooltip>
+            <Tooltip text="Sign Up">
+              <Link href="/signup" className="btn-secondary inline-block">
+                Sign Up
+              </Link>
+            </Tooltip>
+          </>
+        )}
       </div>
     </nav>
   );
