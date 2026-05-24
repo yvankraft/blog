@@ -10,15 +10,15 @@ generator client {
 
 model User {
   id            String    @id @default(uuid())
-  name          String
+  name          String    
   email         String    @unique
-  emailVerified DateTime?
+  emailVerified Boolean
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
   // Relations spécifiques à ton application
-  username      String    @unique // Ajouté pour ton besoin Reddit-like
+  username      String    @unique 
   sessions      Session[]
   accounts      Account[]
   posts         Post[]

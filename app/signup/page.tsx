@@ -6,52 +6,100 @@ import { MessageCircle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // ✅ Import du router Next.js
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
-  const router = useRouter(); // ✅ Initialisation du router
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ✅ États pour gérer dynamiquement le contenu de la modale
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // ✅ Fonction pour configurer et ouvrir la modale
+  const triggerModal = (title: string, message: string, success: boolean) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setIsSuccess(success);
+    const modal = document.getElementById(
+      "register_modal",
+    ) as HTMLDialogElement;
+    if (modal) modal.showModal();
+  };
+
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const cleanUsername = username.trim();
+    const cleanEmail = email.trim();
+
     if (password !== confirmPassword) {
-      alert("Les mots de passe ne correspondent pas !");
+      triggerModal(
+        "Validation Error",
+        "Passwords do not match! Please check and try again.",
+        false,
+      );
       return;
     }
 
     setLoading(true);
     const { data, error } = await authClient.signUp.email({
-      email,
-      password,
-      name: username,
-    });
+      email: cleanEmail,
+      password: password,
+      name: cleanUsername,
+      username: cleanUsername,
+    } as any);
     setLoading(false);
 
     if (error) {
-      alert(error.message || "Une erreur est survenue lors de l'inscription.");
       console.error("Registration error:", error);
+      let userFriendlyMessage =
+        "An unexpected error occurred during registration. Please try again.";
+
+      if (error.status === 422 || error.code === "FAILED_TO_CREATE_USER") {
+        // Handles Prisma's P2002 unique constraint (Username or Email already taken)
+        userFriendlyMessage =
+          "This username or email address is already taken. Please choose another one.";
+      } else if (error.code === "INVALID_EMAIL") {
+        userFriendlyMessage = "The email address you entered is invalid.";
+      } else if (error.code === "PASSWORD_TOO_SHORT") {
+        userFriendlyMessage =
+          "Your password is too short. Please use a stronger password.";
+      } else if (error.message) {
+        userFriendlyMessage = error.message;
+      }
+
+      triggerModal("Oops!", userFriendlyMessage, false);
     } else {
-      const modal = document.getElementById("my_modal_1") as HTMLDialogElement;
-      if (modal) modal.showModal();
+      triggerModal(
+        "Welcome on board!",
+        "Your account has been successfully created. You can now join the community!",
+        true,
+      );
     }
   };
 
-  // ✅ Fonction déplacée ici pour être accessible partout dans le composant
-  const handleRedirect = () => {
-    router.push("/login");
+  // ✅ Action du bouton Close : redirige uniquement en cas de succès
+  const handleModalClose = () => {
+    if (isSuccess) {
+      router.push("/login");
+    }
   };
 
   return (
     <div className="md:h-screen grid md:grid-cols-5 items-center justify-center p-4 px-12 gap-8 bg-white dark:bg-black text-black dark:text-white antialiased">
       <div
         id="inscription"
-        className="md:col-span-2 max-w-md h-full w-full justify-self-center"
+        className="md:col-span-2 max-w-md w-full justify-self-center"
       >
-        <Link href="/" className="btn-primary transition w-24 mb-4 inline-block">
+        <Link
+          href="/"
+          className="btn-primary transition w-24 mb-4 inline-block"
+        >
           /home
         </Link>
         <div className="flex items-center gap-2 mb-10">
@@ -65,12 +113,11 @@ export default function RegisterPage() {
           Create,
           <br /> Your Account
         </h1>
-        
-        {/* Enveloppe tes inputs dans une vraie balise HTML form */}
+
         <form onSubmit={handleRegister} className="flex flex-col gap-2">
           <input
             type="text"
-            placeholder="Username"
+            placeholder="Pseudo"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full border-b border-gray-200 dark:border-gray-800 bg-transparent text-sm py-2 focus:outline-none focus:border-black dark:focus:border-white transition duration-300 placeholder-gray-400"
@@ -100,7 +147,6 @@ export default function RegisterPage() {
             className="w-full border-b border-gray-200 dark:border-gray-800 bg-transparent text-sm py-2 focus:outline-none focus:border-black dark:focus:border-white transition duration-300 placeholder-gray-400"
             required
           />
-
           <button
             type="submit"
             disabled={loading}
@@ -112,11 +158,11 @@ export default function RegisterPage() {
 
         {/* Séparateur Minimaliste */}
         <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-100 dark:border-gray-900"></div>
+          <div className="grow border-t border-gray-100 dark:border-gray-900"></div>
           <span className="px-3 text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
             Or Register With
           </span>
-          <div className="flex-grow border-t border-gray-100 dark:border-gray-900"></div>
+          <div className="grow border-t border-gray-100 dark:border-gray-900"></div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 w-full">
@@ -131,7 +177,6 @@ export default function RegisterPage() {
           </button>
         </div>
 
-        {/* Lien de redirection vers la connexion */}
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
           Already Have An Account?{" "}
           <Link
@@ -142,18 +187,23 @@ export default function RegisterPage() {
           </Link>
         </div>
 
-        {/* Modale DaisyUI de succès */}
-        <dialog id="my_modal_1" className="modal">
+        {/* ✅ Modale Unique et Dynamique */}
+        <dialog id="register_modal" className="modal">
           <div className="modal-box bg-white dark:bg-zinc-900 border border-gray-100 dark:border-gray-800">
-            <h3 className="font-bold text-lg text-black dark:text-white">welcome on board!</h3>
+            <h3
+              className={`font-bold text-lg ${isSuccess ? "text-black dark:text-white" : "text-red-500"}`}
+            >
+              {modalTitle}
+            </h3>
             <p className="py-4 text-sm text-gray-500 dark:text-gray-400">
-              you can now create posts, share your ideas, ask technical
-              questions, and connect with the community. Happy blogging!
+              {modalMessage}
             </p>
             <div className="modal-action">
               <form method="dialog">
-                {/* ✅ Suppression des parenthèses exécutives : on passe juste la référence de la fonction */}
-                <button onClick={handleRedirect} className="bg-black dark:bg-white text-white dark:text-black text-xs font-medium px-4 py-2 rounded-md hover:opacity-90 transition">
+                <button
+                  onClick={handleModalClose}
+                  className="bg-black dark:bg-white text-white dark:text-black text-xs font-medium px-4 py-2 rounded-md hover:opacity-90 transition"
+                >
                   Close
                 </button>
               </form>

@@ -13,6 +13,15 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true, 
     },
+    user: {
+        additionalFields: {
+            username: {
+                type: "string",
+                required: true,
+                input: true, // Permet de l'envoyer depuis le client lors du signUp
+            },
+        },
+    },
     session: {
         expiresIn: 60 * 60 * 24 * 3, // 3 jours
         updateAge: 60 * 60 * 24, // Mise à jour chaque jour

@@ -4,15 +4,81 @@ import { MessageCircle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "../api/lib/auth-client";
 
 export default function page() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // ✅ État pour stocker dynamiquement le message de la modale
+  const [modalMessage, setModalMessage] = useState("");
+
+  // ✅ Fonction utilitaire pour ouvrir la modale avec un message spécifique
+  const triggerModal = (message: string) => {
+    setModalMessage(message);
+    const modal = document.getElementById(
+      "login_error_modal",
+    ) as HTMLDialogElement;
+    if (modal) modal.showModal();
+  };
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const cleanEmail = email.trim();
+
+    if (password.length === 0) {
+      triggerModal("Please enter your password."); // 👈 Remplacement de l'alert
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await authClient.signIn.email({
+      email: cleanEmail,
+      password: password,
+      rememberMe: rememberMe,
+    } as any);
+    setLoading(false);
+
+    if (error) {
+      console.error("Login error:", error);
+
+      // 💡 English translations and clarifications for Better Auth login errors
+      let userFriendlyMessage =
+        "An unexpected error occurred. Please try again.";
+
+      if (error.code === "INVALID_EMAIL" || error.code === "INVALID_PASSWORD") {
+        userFriendlyMessage =
+          "Invalid email or password. Please check your credentials and try again.";
+      } else if (error.code === "USER_NOT_FOUND") {
+        userFriendlyMessage = "No account found with this email address.";
+      } else if (error.status === 401) {
+        userFriendlyMessage = "Incorrect email or password.";
+      } else if (error.message) {
+        userFriendlyMessage = error.message;
+      }
+
+      triggerModal(userFriendlyMessage);
+    } else {
+      router.push("/");
+    }
+  };
+
   return (
-    <div className="h-screen grid sm:grid-cols-5 items-center justify-center p-4 px-12 gap-8 bg-white dark:bg-black text-black dark:text-white antialiased">
-      <div className="col-span-2 max-w-md w-full justify-self-center p-4">
-        <Link href="/" className="btn-primary transition w-24 ">
+    <div className="md:h-screen grid md:grid-cols-5 items-center justify-center p-4 px-12 gap-8 bg-white dark:bg-black text-black dark:text-white antialiased">
+      <div className="md:col-span-2 max-w-md w-full justify-self-center">
+        <Link
+          href="/"
+          className="btn-primary transition w-24 mb-4 inline-block"
+        >
           /home
         </Link>
-        <div className="flex items-center gap-2  mb-10">
+        <div className="flex items-center gap-2 mb-10">
           <MessageCircle size={16} className="text-gray-400" />
           <h3 className="font-medium tracking-tight text-sm text-gray-500 dark:text-gray-400">
             Les Talk
@@ -23,22 +89,31 @@ export default function page() {
           Hi,
           <br /> Welcome Back
         </h1>
-        <div className="flex flex-col gap-3">
+
+        {/* ✅ Ajout de la balise form manquante pour capturer le onSubmit */}
+        <form onSubmit={handleLogin} className="flex flex-col gap-3">
           <input
             type="email"
             placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full border-b border-gray-200 dark:border-gray-800 bg-transparent text-sm py-2 focus:outline-none focus:border-black dark:focus:border-white transition duration-300 placeholder-gray-400"
+            required
           />
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full border-b border-gray-200 dark:border-gray-800 bg-transparent text-sm py-2 focus:outline-none focus:border-black dark:focus:border-white transition duration-300 placeholder-gray-400"
+            required
           />
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                defaultChecked
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-3.5 h-3.5 accent-black dark:accent-white rounded border-gray-200"
               />
               <label className="text-xs text-gray-500 dark:text-gray-400 font-medium">
@@ -47,55 +122,79 @@ export default function page() {
             </div>
             <Link
               href="/forgot-password"
-              className="text-xs text-gray-400 dark:text-gray-500 hover:text-black dark:hover:text-white transition"
+              className="text-xs text-gray-400 dark:text-gray-500 hover:text-black hover:underline dark:hover:text-white transition"
             >
               Forgot Password?
             </Link>
           </div>
 
-          <button className="w-full bg-black dark:bg-white text-white dark:text-black text-sm font-medium py-2.5 rounded-md mt-6 hover:opacity-90 transition">
-            Login
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black dark:bg-white text-white dark:text-black text-sm font-medium py-2.5 rounded-md mt-6 hover:opacity-90 transition disabled:opacity-50"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        {/* Séparateur Minimaliste */}
+        <div className="flex items-center my-6">
+          <div className="grow border-t border-gray-100 dark:border-gray-900"></div>
+          <span className="px-3 text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+            Or
+          </span>
+          <div className="grow border-t border-gray-100 dark:border-gray-900"></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
+            <FcGoogle className="w-4 h-4" />
+            Google
           </button>
 
-          {/* Séparateur Minimaliste */}
-          <div className="flex items-center my-6">
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-900"></div>
-            <span className="px-3 text-[11px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
-              Or
-            </span>
-            <div className="flex-grow border-t border-gray-100 dark:border-gray-900"></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 w-full">
-            <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
-              <FcGoogle className="w-4 h-4" />
-              Google
-            </button>
-
-            <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
-              <FaApple className="w-4 h-4 text-black dark:text-white" />
-              Apple
-            </button>
-          </div>
+          <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
+            <FaApple className="w-4 h-4 text-black dark:text-white" />
+            Apple
+          </button>
         </div>
 
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
           Don’t Have An Account?{" "}
-          <a
+          <Link
             href="/signup"
             className="text-black dark:text-white font-medium hover:underline ml-1"
           >
             Register Now.
-          </a>
+          </Link>
         </div>
       </div>
 
+      {/* ✅ Intégration de la structure de ta modale DaisyUI dynamique */}
+      <dialog id="login_error_modal" className="modal">
+        <div className="modal-box bg-white dark:bg-zinc-900 border border-gray-100 dark:border-gray-800">
+          <h3 className="font-bold text-lg text-black dark:text-white">
+            Notification
+          </h3>
+          <p className="py-4 text-sm text-gray-500 dark:text-gray-400">
+            {modalMessage}
+          </p>
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="bg-black dark:bg-white text-white dark:text-black text-xs font-medium px-4 py-2 rounded-md hover:opacity-90 transition">
+                Close
+              </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Partie Mockup Visuel de droite */}
       <motion.div
         initial={{ opacity: 0, y: 200, filter: "blur(10px)" }}
         animate={{ opacity: 1, y: 0, filter: "none" }}
         transition={{ duration: 2 }}
         whileHover={{ scale: 1.005 }}
-        className="mockup-browser flex flex-col border border-gray-300 dark:border-gray-900 h-full w-full col-span-3 bg-gray-50/50 dark:bg-gray-900/10 rounded-2xl overflow-hidden relative"
+        className="mockup-browser flex flex-col border border-gray-300 dark:border-gray-900 h-full w-full md:col-span-3 bg-gray-50/50 dark:bg-gray-900/10 rounded-2xl overflow-hidden relative"
       >
         <motion.div
           initial={{ opacity: 0, x: 200, filter: "blur(20px)" }}
@@ -184,7 +283,6 @@ export default function page() {
           </motion.div>
         </div>
 
-        {/* Floating Premium Card */}
         <div className="absolute card right-6 top-36 bg-white/80 dark:bg-black/80 backdrop-blur border border-gray-100 dark:border-gray-900 w-80 rounded-xl shadow-sm p-5">
           <h2 className="text-sm font-semibold tracking-tight text-gray-900 dark:text-white">
             Hi guest!
