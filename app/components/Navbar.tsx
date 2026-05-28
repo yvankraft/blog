@@ -1,14 +1,18 @@
+"use client";
 import { Tooltip } from "./Tooltip";
 import Link from "next/link";
-import { auth } from "@/app/lib/auth";
-import { headers } from "next/headers";
+import { authClient } from "@/app/api/lib/auth-client";
 import { User } from "lucide-react";
 
-export default async function Navbar() {
-  // ✅ Récupération de la session actuelle côté serveur
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export default function Navbar() {
+  // Hook client de Better-Auth qui écoute la session en temps réel
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) {
+    return (
+      <div className="w-20 h-8 bg-gray-100 dark:bg-zinc-900 animate-pulse rounded-lg" />
+    );
+  }
   return (
     <nav className="fixed m-2  top-0 left-0 right-0 mx-auto max-w-400 bg-white flex items-center justify-between border-b-white dark:border-b-white/10 dark:bg-black  dark:shadow-gray-800">
       <div className="flex items-center justify-around space-x-4 px-4 py-2 ">
@@ -75,7 +79,7 @@ export default async function Navbar() {
               className="flex items-center gap-2 text-sm font-medium border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-900 transition"
             >
               <User size={18} className="text-gray-400" />
-              {session.user.username || session.user.name}
+              {session.user.name}
             </Link>
           </Tooltip>
         ) : (
