@@ -96,3 +96,14 @@ model Comment {
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}

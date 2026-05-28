@@ -28,7 +28,7 @@ export default async function ProfilePage() {
   });
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white antialiased p-8 md:p-16">
+    <div className="min-h-screen justify-center bg-white dark:bg-black text-black dark:text-white antialiased p-8 md:p-16">
       <div className="max-w-2xl mx-auto">
         {/* Navigation / Header */}
         <div className="flex items-center justify-between mb-12">
