@@ -3,18 +3,46 @@
 import { useState } from "react";
 import { authClient } from "@/app/api/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { LogOut, Trash2 } from "lucide-react";
+import {
+  LogOut,
+  Trash2,
+  User,
+  Mail,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import Modal from "../components/Modal";
 
-export default function ProfileActions() {
-  const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [confirmationText, setConfirmationText] = useState("");
-  const [requiredText, setRequiredText] = useState(""); // 👈 État pour stocker le code aléatoire
-  const [step, setStep] = useState<"input" | "goodbye">("input");
+interface ProfileActionsProps {
+  user: {
+    username?: string;
+    name: string;
+    email: string;
+    createdAt: string | Date;
+  };
+}
 
-  // 🎲 Fonction pour générer un code de sécurité aléatoire
+export default function ProfileActions({ user }: ProfileActionsProps) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [localName, setLocalName] = useState(user.name);
+
+  // États pour la suppression de compte
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
+  const [requiredText, setRequiredText] = useState("");
+  const [deleteStep, setDeleteStep] = useState<"input" | "goodbye">("input");
+
+  // États pour la modification des données
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editType, setEditType] = useState<"username" | "email" | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [editStep, setEditStep] = useState<"form" | "success" | "error">(
+    "form",
+  );
+  const [errorMessage, setErrorMessage] = useState("");
+
   const generateRandomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
@@ -22,6 +50,43 @@ export default function ProfileActions() {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+  };
+
+  const handleOpenEditModal = (
+    type: "username" | "email",
+    currentValue: string,
+  ) => {
+    setEditType(type);
+    setEditValue(currentValue);
+    setEditStep("form");
+    setErrorMessage("");
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      if (editType === "username") {
+        await authClient.updateUser({
+          name: editValue,
+        });
+        setLocalName(editValue);
+      } else if (editType === "email") {
+        await authClient.changeEmail({
+          newEmail: editValue,
+        });
+      }
+      setEditStep("success");
+      router.refresh();
+    } catch (error: any) {
+      setErrorMessage(error.message || "An error occurred while updating.");
+      setEditStep("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -39,17 +104,14 @@ export default function ProfileActions() {
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (confirmationText !== requiredText) return; // 👈 Vérification avec le code dynamique
+    if (confirmationText !== requiredText) return;
 
     setLoading(true);
     try {
-      const response = await fetch("/api/user/delete", {
-        method: "DELETE",
-      });
-
+      const response = await fetch("/api/user/delete", { method: "DELETE" });
       if (response.ok) {
         await authClient.signOut();
-        setStep("goodbye");
+        setDeleteStep("goodbye");
       } else {
         alert("An error occurred. Please try again.");
       }
@@ -61,45 +123,188 @@ export default function ProfileActions() {
   };
 
   const handleFinalRedirect = () => {
-    setIsModalOpen(false);
+    setIsDeleteModalOpen(false);
     router.push("/");
     router.refresh();
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-900">
-      <button
-        onClick={handleSignOut}
-        disabled={loading}
-        className="flex items-center justify-center gap-2 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900 transition text-gray-600 dark:text-gray-300 disabled:opacity-50"
-      >
-        <LogOut size={14} />
-        Log Out
-      </button>
+    <div className="space-y-6">
+      {/* --- AFFICHAGE DES INFOS CLIQUABLES --- */}
+      <div className="space-y-6">
+        <div
+          onClick={() =>
+            handleOpenEditModal("username", localName || user.name)
+          }
+          className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-900 pb-4 active:scale-[0.99] transition hover:cursor-pointer hover:bg-gray-100/30 dark:hover:bg-zinc-800/20 p-2 rounded-xl"
+        >
+          <User size={18} className="text-gray-400" />
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-gray-400 font-medium">
+              Username
+            </p>
+            <p className="text-sm font-medium mt-0.5">
+              {localName || user.name}
+            </p>
+          </div>
+        </div>
 
-      <button
-        onClick={() => {
-          setStep("input");
-          setConfirmationText("");
-          setRequiredText(generateRandomCode()); // 👈 Génère un nouveau code à l'ouverture
-          setIsModalOpen(true);
-        }}
-        disabled={loading}
-        className="flex items-center justify-center gap-2 text-xs font-medium border border-transparent rounded-lg px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition disabled:opacity-50 sm:ml-auto"
-      >
-        <Trash2 size={14} />
-        Delete Account
-      </button>
+        <div
+          onClick={() => handleOpenEditModal("email", user.email)}
+          className="flex items-center gap-4 border-b border-gray-100 dark:border-gray-900 pb-4 active:scale-[0.99] transition hover:cursor-pointer hover:bg-gray-100/30 dark:hover:bg-zinc-800/20 p-2 rounded-xl"
+        >
+          <Mail size={18} className="text-gray-400" />
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-gray-400 font-medium">
+              Email Address
+            </p>
+            <p className="text-sm font-medium mt-0.5">{user.email}</p>
+          </div>
+        </div>
 
+        <div className="flex items-center gap-4 pb-2 p-2">
+          <Calendar size={18} className="text-gray-400" />
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-gray-400 font-medium">
+              Joined
+            </p>
+            <p className="text-sm font-medium mt-0.5">
+              {new Date(user.createdAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* --- BOUTONS D'ACTIONS --- */}
+      <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-900">
+        <button
+          onClick={handleSignOut}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 text-xs font-medium border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900 transition text-gray-600 dark:text-gray-300 disabled:opacity-50"
+        >
+          <LogOut size={14} /> Log Out
+        </button>
+
+        <button
+          onClick={() => {
+            setDeleteStep("input");
+            setConfirmationText("");
+            setRequiredText(generateRandomCode());
+            setIsDeleteModalOpen(true);
+          }}
+          disabled={loading}
+          className="flex items-center justify-center gap-2 text-xs font-medium border border-transparent rounded-lg px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition disabled:opacity-50 sm:ml-auto"
+        >
+          <Trash2 size={14} /> Delete Account
+        </button>
+      </div>
+
+      {/* --- MODAL DE MODIFICATION DE DONNÉES STYLISÉE --- */}
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
+        {editStep === "form" && (
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold uppercase tracking-tight dark:text-white">
+                Update {editType === "username" ? "Username" : "Email Address"}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Please change your profile details below.
+              </p>
+            </div>
+
+            <input
+              type={editType === "email" ? "email" : "text"}
+              required
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              disabled={loading}
+              className="w-full px-3 py-2 border rounded-md bg-transparent border-gray-300 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white text-sm"
+            />
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-xs px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="text-xs font-medium px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md transition"
+              >
+                {loading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {editStep === "success" && (
+          <div className="flex flex-col items-center text-center p-4 space-y-3">
+            <CheckCircle2 size={40} className="text-green-500" />
+            <h2 className="text-lg font-bold dark:text-white">
+              Update Successful
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+              {editType === "username"
+                ? "Your name has been updated instantly."
+                : "A confirmation link has been sent to your new email address. Please verify it to complete the change."}
+            </p>
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="mt-2 text-xs font-medium px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md transition"
+            >
+              Done
+            </button>
+          </div>
+        )}
+
+        {editStep === "error" && (
+          <div className="flex flex-col items-center text-center p-4 space-y-3">
+            <AlertCircle size={40} className="text-red-500" />
+            <h2 className="text-lg font-bold dark:text-white">Update Failed</h2>
+            <p className="text-sm text-red-500 max-w-sm bg-red-500/10 border border-red-500/20 p-2 rounded-lg font-mono text-xs">
+              {errorMessage}
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => setEditStep("form")}
+                className="text-xs px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-xs font-medium px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* --- MODAL DE SUPPRESSION DE COMPTE --- */}
       <Modal
-        isOpen={isModalOpen}
-        title={step === "input" ? "Delete Account" : "Account Deleted"}
+        isOpen={isDeleteModalOpen}
         onClose={
-          step === "input" ? () => setIsModalOpen(false) : handleFinalRedirect
+          deleteStep === "input"
+            ? () => setIsDeleteModalOpen(false)
+            : handleFinalRedirect
         }
       >
-        {step === "input" ? (
+        {deleteStep === "input" ? (
           <form onSubmit={handleDeleteAccount} className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold uppercase tracking-tight text-red-600">
+                Delete Account
+              </h2>
+            </div>
             <p className="text-sm text-gray-500 leading-relaxed">
               This action is{" "}
               <span className="font-semibold text-red-600">permanent</span>. To
@@ -121,7 +326,7 @@ export default function ProfileActions() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsDeleteModalOpen(false)}
                 className="text-xs px-4 py-2 border border-gray-200 dark:border-gray-800 rounded-md hover:bg-gray-50 dark:hover:bg-zinc-800 transition"
               >
                 Cancel
@@ -137,6 +342,11 @@ export default function ProfileActions() {
           </form>
         ) : (
           <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold uppercase tracking-tight text-gray-900 dark:text-white">
+                Account Deleted
+              </h2>
+            </div>
             <p className="text-sm text-gray-500 leading-relaxed">
               Your account has been successfully removed. We're sad to lose you
               as a user. A confirmation email has been sent to your inbox.

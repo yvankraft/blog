@@ -52,13 +52,13 @@ export default async function Navbar() {
 
           {/* ✅ N'affiche l'accès à la création de post que si l'utilisateur est connecté */}
           {session && (
-            <Tooltip text="create post">
+            <Tooltip text="go to chat">
               <li>
                 <Link
-                  href="/create"
+                  href="/chat"
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
                 >
-                  Create
+                  chat
                 </Link>
               </li>
             </Tooltip>

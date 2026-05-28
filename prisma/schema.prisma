@@ -6,7 +6,9 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// --- TABLES REQUISES PAR BETTER AUTH ---
+// ==========================================
+// 1. AUTHENTIFICATION & UTILISATEURS (BETTER AUTH)
+// ==========================================
 
 model User {
   id            String    @id @default(uuid())
@@ -14,17 +16,34 @@ model User {
   email         String    @unique
   emailVerified Boolean
   image         String?
+  lastActiveAt  DateTime? // pour suivre la presence en ligne de l'utilisateur
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
-  // Relations spécifiques à ton application
   username      String    @unique 
+  bio           String?   @db.VarChar(160)
+  isOnline      Boolean   @default(false)
+
+  // Relations Auth
   sessions      Session[]
   accounts      Account[]
+
+  // Relations Social & Contenu
   posts         Post[]
   comments      Comment[]
+  likes         Like[]
+  
+  // Relations Amitiés / Connaissances (Table d'association explicite pour optimiser)
+  sentFollows     Follow[] @relation("FollowerRelation")
+  receivedFollows Follow[] @relation("FollowingRelation")
+
+  // Relations Messagerie & Appels
+  chatMembers   ChatMember[]
+  messages      Message[]
+  callParticipants CallParticipant[]
+  lives         LiveStream[]
 
   @@map("user")
+  @@index([isOnline]) // Optimise la récupération des amis en ligne
 }
 
 model Session {
@@ -39,6 +58,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("session")
+  @@index([userId])
 }
 
 model Account {
@@ -58,47 +78,12 @@ model Account {
   updatedAt             DateTime
 
   @@map("account")
-}
-
-// --- TABLES SPECIFIQUES A TON REDDIT CAMEROUNAIS ---
-
-model Community {
-  id          String   @id @default(uuid())
-  name        String   @unique // Ex: "KamerDev", "YaoundeTech", "DoualaCuisine"
-  description String?
-  createdAt   DateTime @default(now())
-  posts       Post[]
-}
-
-model Post {
-  id          String    @id @default(uuid())
-  title       String
-  content     String    @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relations
-  authorId    String
-  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  communityId String
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  comments    Comment[]
-}
-
-model Comment {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  
-  // Relations
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([providerId, accountId])
+  @@index([userId])
 }
 
 model Verification {
-  id         String    @id @default(cuid())
+  id         String    @id @default(uuid())
   identifier String
   value      String
   expiresAt  DateTime
@@ -106,4 +91,183 @@ model Verification {
   updatedAt  DateTime? @updatedAt
 
   @@map("verification")
+  @@unique([identifier, value])
+}
+
+// ==========================================
+// 2. RÉSEAU SOCIAL (POSTS, COMMUNAUTÉS, LIKES)
+// ==========================================
+
+model Community {
+  id          String   @id @default(uuid())
+  name        String   @unique 
+  description String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  posts       Post[]
+  
+  @@index([name])
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  title       String   @db.VarChar(255)
+  content     String   @db.Text
+  mediaUrl    String?  // Pour les images ou vidéos dans les posts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  published   Boolean  @default(false)
+  
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  communityId String?  // Optionnel : un post peut être sur le profil général ou dans une communauté
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  
+  comments    Comment[]
+  likes       Like[]
+
+  // INDEXATION CRITIQUE : Optimise la pagination (10 par 10) et le fil d'actualité
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@index([communityId, published, createdAt(sort: Desc)])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Asc)]) // Optimise le chargement du fil de discussion d'un post
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId]) // Un utilisateur ne peut liker qu'une seule fois un post
+  @@index([postId])          // Rapide pour compter le nombre de likes
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  followerId  String   // L'utilisateur qui suit
+  follower    User     @relation("FollowerRelation", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String   // L'utilisateur suivi
+  following   User     @relation("FollowingRelation", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId]) // Évite les doublons de relations
+  @@index([followerId])               // Pour lister rapidement mes connaissances / abonnements
+  @@index([followingId])              // Pour lister rapidement mes abonnés
+}
+
+// ==========================================
+// 3. MESSAGERIE EN TEMPS RÉEL (DISCUSSIONS & GROUPES)
+// ==========================================
+
+enum ChatType {
+  DIRECT
+  GROUP
+}
+
+model Chat {
+  id        String       @id @default(uuid())
+  type      ChatType     @default(DIRECT)
+  name      String?      // Utile uniquement pour les chats de groupe
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  
+  members   ChatMember[]
+  messages  Message[]
+  calls     Call[]
+
+  @@index([updatedAt(sort: Desc)]) // Classe la liste des discussions de la plus active à la moins active
+}
+
+model ChatMember {
+  id       String   @id @default(uuid())
+  joinedAt DateTime @default(now())
+  chatId   String
+  chat     Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId]) // Évite qu'un membre soit deux fois dans le même salon
+  @@index([userId])          // Récupère instantanément toutes les discussions d'un utilisateur
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  mediaUrl  String?  // Images, audios, fichiers transférés en chat
+  createdAt DateTime @default(now())
+  
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  // INDEXATION CRITIQUE PAGINATION : Permet de charger les messages 10 par 10 (ou 20 par 20) du plus récent au plus ancien
+  @@index([chatId, createdAt(sort: Desc)]) 
+}
+
+// ==========================================
+// 4. APPELS AUDIO, VIDEO, GROUPES & LIVE STREAMS
+// ==========================================
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+model Call {
+  id        String            @id @default(uuid())
+  type      CallType
+  isGroup   Boolean           @default(false)
+  isActive  Boolean           @default(true) // Permet de savoir si l'appel est en cours
+  createdAt DateTime          @default(now())
+  endedAt   DateTime?
+  
+  chatId    String
+  chat      Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  
+  participants CallParticipant[]
+
+  @@index([chatId, isActive]) // Vérifie rapidement s'il y a un appel actif dans ce chat
+}
+
+model CallParticipant {
+  id       String   @id @default(uuid())
+  joinedAt DateTime @default(now())
+  
+  callId   String
+  call     Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([callId, userId])
+  @@index([userId])
+}
+
+model LiveStream {
+  id          String    @id @default(uuid())
+  title       String    @db.VarChar(255)
+  isLive      Boolean   @default(true) // Détermine si le Live est actuellement en diffusion
+  streamKey   String    @unique        // Clé unique pour ton serveur de streaming (WebRTC/RTMP)
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+  
+  hostId      String
+  host        User      @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  @@index([isLive, createdAt(sort: Desc)]) // Optimise la récupération de la liste des Lives en cours en première page
 }

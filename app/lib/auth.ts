@@ -1,4 +1,4 @@
-import { betterAuth, User } from "better-auth";
+import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import nodemailer from "nodemailer";
 import { prisma } from "./db";
@@ -22,9 +22,12 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
   appName: "Les Talk",
+
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
+
     onExistingUserSignUp: async ({ user }, request) => {
       await transporter.sendMail({
         to: user.email,
@@ -61,22 +64,21 @@ export const auth = betterAuth({
     // Fonction appelée après la réinitialisation du mot de passe
     onPasswordReset: async ({ user }, request) => {
       console.log(`Password for user ${user.email} has been reset.`);
-
       try {
         await transporter.sendMail({
           from: `"Les Talk" <${process.env.SMTP_USER}>`,
           to: user.email,
           subject: "Votre mot de passe a été modifié - Les Talk",
           html: `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 450px; margin: 40px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 16px;">Account Security</h2>
-        <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 24px;">Hello,</p>
-        <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 24px;">The password for your <strong>Les Talk</strong> account has been successfully changed.</p>
-        <p style="font-size: 12px; color: #6b7280; line-height: 1.5;">If you made this change, no further action is required.</p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
-        <p style="font-size: 12px; color: #dc2626; line-height: 1.5; font-weight: 500;">If you did not request this change, please contact our support immediately or secure your email address.</p>
-    </div>
-  `,
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 450px; margin: 40px auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin-bottom: 16px;">Account Security</h2>
+                <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 24px;">Hello,</p>
+                <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 24px;">The password for your <strong>Les Talk</strong> account has been successfully changed.</p>
+                <p style="font-size: 12px; color: #6b7280; line-height: 1.5;">If you made this change, no further action is required.</p>
+                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+                <p style="font-size: 12px; color: #dc2626; line-height: 1.5; font-weight: 500;">If you did not request this change, please contact our support immediately or secure your email address.</p>
+            </div>
+          `,
         });
       } catch (emailError) {
         console.error(
@@ -108,13 +110,39 @@ export const auth = betterAuth({
     },
   },
 
-  // Configuration des champs utilisateur personnalisés
   user: {
     additionalFields: {
       username: {
         type: "string",
         required: true,
         input: true,
+      },
+      lastActiveAt: {
+        type: "date",
+        required: false,
+        input: false, // Évite que l'utilisateur puisse le modifier lui-même à l'inscription
+      },
+    },
+    // Configuration de changement d'email
+    changeEmail: {
+      enabled: true,
+      sendVerificationEmail: async ({
+        user,
+        newEmail,
+        url,
+        token,
+      }: {
+        user: any;
+        newEmail: string;
+        url: string;
+        token: string;
+      }) => {
+        await transporter.sendMail({
+          from: `"Les Talk" <${process.env.SMTP_USER}>`,
+          to: user.email,
+          subject: "Approve email change - Les Talk",
+          text: `Click the link to approve the change to ${newEmail}: ${url}`,
+        });
       },
     },
   },
