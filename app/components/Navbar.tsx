@@ -2,7 +2,7 @@
 import { Tooltip } from "./Tooltip";
 import Link from "next/link";
 import { authClient } from "@/app/api/lib/auth-client";
-import { User } from "lucide-react";
+import { HomeIcon, User, Settings } from "lucide-react";
 
 export default function Navbar() {
   // Hook client de Better-Auth qui écoute la session en temps réel
@@ -14,63 +14,38 @@ export default function Navbar() {
     );
   }
   return (
-    <nav className="fixed m-2  top-0 left-0 right-0 mx-auto max-w-400 bg-white flex items-center justify-between border-b-white dark:border-b-white/10 dark:bg-black  dark:shadow-gray-800">
+    <nav className=" m-2 mx-auto w-full rounded-2xl max-w-400 bg-transparent flex items-center justify-between  dark:shadow-gray-800">
       <div className="flex items-center justify-around space-x-4 px-4 py-2 ">
         <Tooltip text="go to home">
           <Link href="/">
             <h1 className="text-3xl text-[#475569] dark:text-[#f8fafc] font-bold box cursor-pointer">
-              Les Talk
+              Les Talks
             </h1>
           </Link>
         </Tooltip>
+      </div>
+
+      <div className="flex space-x-4 px-4 py-2 items-center">
         <Tooltip text="search">
           <input
             type="text"
             placeholder="search... ?"
             className=" bg-white/30 dark:bg-black/10 border-gray-200 shadow-sm dark:shadow-gray-800 focus:ring-2 rounded-2xl content-evenly max-w-2xs py-2 px-4 focus:outline-none focus:ring-gray-500 transition duration-300 "
-          />
+          />{" "}
         </Tooltip>
-      </div>
-      <div>
-        <ul className="flex space-x-4 px-4 py-2">
-          <Tooltip text="go to home">
-            <li>
-              <Link
-                href="/"
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
-              >
-                Home
-              </Link>
-            </li>
-          </Tooltip>
-          <Tooltip text="go to blog">
-            <li>
-              <Link
-                href="/blog"
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
-              >
-                Blog
-              </Link>
-            </li>
-          </Tooltip>
-
-          {/* ✅ N'affiche l'accès à la création de post que si l'utilisateur est connecté */}
-          {session && (
-            <Tooltip text="go to chat">
-              <li>
-                <Link
-                  href="/chat"
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
-                >
-                  chat
-                </Link>
-              </li>
-            </Tooltip>
-          )}
-        </ul>
-      </div>
-
-      <div className="flex space-x-4 px-4 py-2 items-center">
+        <Tooltip text="go to home">
+          <Link
+            href="/"
+            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-300"
+          >
+            <HomeIcon size={24} />
+          </Link>
+        </Tooltip>
+        <Tooltip text="go settings">
+          <Link href="./settings">
+            <Settings size={24} />
+          </Link>
+        </Tooltip>
         {session ? (
           // ✅ Si l'utilisateur est connecté, on affiche le lien vers son profil
           <Tooltip text="View Profile">

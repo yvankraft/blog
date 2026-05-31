@@ -151,5 +151,18 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 3,
     updateAge: 60 * 60 * 24,
   },
-  socialProviders: {},
+  socialProviders: {
+    google: {
+      prompt: "select_account",
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+    tiktok: {
+      clientSecret: process.env.TIKTOK_CLIENT_SECRET as string,
+      clientKey: process.env.TIKTOK_CLIENT_ID as string,
+      authorizationUrl: "https://www.tiktok.com/v2/auth/authorize/",
+      tokenUrl: "https://open.tiktokapis.com/v2/oauth/token/",
+      userProfileUrl: "https://open.tiktokapis.com/v2/user/info/",
+    },
+  },
 });

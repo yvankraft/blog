@@ -4,7 +4,7 @@ import { authClient } from "@/app/api/lib/auth-client";
 import { motion } from "motion/react";
 import { MessageCircle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
+import { FaTiktok } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -80,6 +80,18 @@ export default function RegisterPage() {
         "Your account has been successfully created. You can now join the community!",
         true,
       );
+    }
+  };
+
+  //fonction pour les reseau sociaux
+  const handleSocialSignIn = async (provider: "google" | "tiktok") => {
+    try {
+      await authClient.signIn.social({
+        provider,
+        callbackURL: "/", // La page où l'utilisateur est redirigé après la connexion
+      });
+    } catch (error) {
+      console.error(`Erreur de connexion avec ${provider}:`, error);
     }
   };
 
@@ -166,14 +178,20 @@ export default function RegisterPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 w-full">
-          <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
+          <button
+            onClick={() => handleSocialSignIn("google")}
+            className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition active:scale-95"
+          >
             <FcGoogle className="w-4 h-4" />
             Google
           </button>
 
-          <button className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition">
-            <FaApple className="w-4 h-4 text-black dark:text-white" />
-            Apple
+          <button
+            onClick={() => handleSocialSignIn("tiktok")}
+            className="flex items-center justify-center gap-2 py-2 border border-gray-200 dark:border-gray-800 rounded-md bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/50 text-xs font-medium text-gray-600 dark:text-gray-300 transition active:scale-95"
+          >
+            <FaTiktok className="w-4 h-4 text-black dark:text-white" />
+            TikTok
           </button>
         </div>
 

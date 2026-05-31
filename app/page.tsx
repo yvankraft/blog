@@ -1,20 +1,36 @@
 import Navbar from "./components/Navbar";
 import FirstSideMenu from "./home/firstSideMenu";
-import { Star, Lock } from "lucide-react";
-import Link from "next/link";
 
-export default function page() {
+export default function Page() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    // Fond slate-50 (clair) qui devient #0d0e12 (sombre)
+    <div className="h-screen w-full bg-slate-50 dark:bg-[#0d0e12] text-zinc-900 dark:text-white flex overflow-hidden p-3 md:p-4 gap-4 antialiased">
       <FirstSideMenu />
-      <Navbar />
-      <main className="flex-1 pt-26 p-4 max-w-3xl ">
-        <h1 className="title">Infinite Scroll</h1>
-      </main>
-      <div className="sticky top-20 h-fit w-64 hidden md:block space-y-4 p-6  items-center ">
-        <h1 className="text-2xl font-bold mb-4">Recommended</h1>
-        <div>
-          <p>you probably no this person.</p>
+
+      <div className="relative flex-1 min-h-0 flex flex-col">
+        <Navbar />
+
+        {/* Zone de contenu sous la Navbar */}
+        <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
+          {/* Le flux central défilant */}
+          <main className="flex-1 min-h-0 bg-white dark:bg-[#1c1d22] border border-slate-200/80 dark:border-zinc-800/40 rounded-3xl p-6 overflow-y-auto scrollbar-none">
+            <h1 className="text-xl font-bold mb-4 tracking-tight text-zinc-900 dark:text-white">
+              Infinite Scroll
+            </h1>
+            <div className="h-[1200px] text-zinc-500 dark:text-zinc-400 text-sm">
+              (Contenu pour tester le défilement interne...)
+            </div>
+          </main>
+
+          {/* Les recommandations à droite du flux */}
+          <div className="hidden lg:block w-72 bg-white dark:bg-[#1c1d22] border border-slate-200/80 dark:border-zinc-800/40 rounded-3xl p-6">
+            <h1 className="text-lg font-bold tracking-tight mb-2 text-zinc-900 dark:text-white">
+              Recommended
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              You probably know this person.
+            </p>
+          </div>
         </div>
       </div>
     </div>
