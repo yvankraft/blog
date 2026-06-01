@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import Modal from "../components/Modal";
+import { createPostAction } from "@/app/lib/actions";
 
 export default function addPost() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -63,22 +64,19 @@ export default function addPost() {
     setEditStep("form");
 
     try {
-      // TODO: Insérer l'appel vers ta Server Action ou API ici
-      // ex: await createPostAction({ title, content, mediaUrl, mediaType });
-
-      console.log("Données prêtes à l'envoi :", {
+      // Appel de la Server Action avec toutes nos données (Texte + Liens Cloudinary)
+      await createPostAction({
         title,
         content,
         mediaUrl,
         mediaType,
       });
-
-      // Réinitialisation des champs après succès
+      // Si tout s'est bien passé, on réinitialise l'interface
       setTitle("");
       setContent("");
       setMediaUrl(null);
       setMediaType(null);
-      setEditStep("success");
+      setEditStep("success"); // Affiche l'écran vert de succès
     } catch (err: any) {
       setErrorMessage(
         err.message || "Une erreur est survenue lors de la publication",
@@ -93,7 +91,7 @@ export default function addPost() {
     <div>
       <button
         onClick={() => handleOpenEditModal("create")}
-        className="fixed  btn-primary bottom-8 "
+        className="fixed  btn-primary bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2"
       >
         create a post
         <PlusCircle size={24} />

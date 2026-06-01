@@ -116,12 +116,13 @@ enum MediaType {
 model Post {
   id          String   @id @default(uuid())
   title       String   @db.VarChar(255)
-  content     String   @db.Text
+  content     String?   @db.Text
   mediaUrl    String?  // Pour les images ou vidéos dans les posts
+  mediaType   MediaType? // Ajoute ceci
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   published   Boolean  @default(false)
-  imageUrl    String?
+  
   
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
