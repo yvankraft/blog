@@ -61,7 +61,7 @@ export default function LikeButton({
         className={`p-1 rounded transition ${
           liked
             ? "text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 z-10"
-            : "text-zinc-400 hover:text-blue-500 hover:bg-zinc-200/50 dark:hover:bg-zinc-400 dark:hover:text-blue-500 z-10"
+            : "text-zinc-400 hover:text-blue-500   dark:hover:text-blue-500 z-10"
         }`}
       >
         <ThumbsUp

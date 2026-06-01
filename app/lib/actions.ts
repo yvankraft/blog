@@ -5,6 +5,7 @@ import { auth } from "./auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
+// Action pour créer un nouveau post
 export async function createPostAction({
   title,
   content,
@@ -42,6 +43,7 @@ export async function createPostAction({
   }
 }
 
+// Action pour liker ou unliker un post
 export async function toggleLikeAction({ postId }: { postId: string }) {
   //verifions si l'utilisateur est connecté
   const session = await auth.api.getSession({ headers: await headers() });
@@ -86,5 +88,42 @@ export async function toggleLikeAction({ postId }: { postId: string }) {
   } catch (error) {
     console.error("Error toggling like:", error);
     throw new Error("Failed to toggle like");
+  }
+}
+
+// Action pour commenter un post
+export async function createCommentAction({
+  postId,
+  content,
+}: {
+  postId: string;
+  content: string;
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || !session.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  if (!content.trim()) {
+    return { success: false, error: "Comment cannot be empty" };
+  }
+
+  try {
+    const newComment = await prisma.comment.create({
+      data: {
+        content,
+        postId,
+        authorId: session.user.id,
+      },
+      include: {
+        author: true, // Pour renvoyer les infos de l'auteur immédiatement
+      },
+    });
+
+    revalidatePath("/");
+    return { success: true, comment: newComment };
+  } catch (error) {
+    console.error("Error creating comment:", error);
+    return { success: false, error: "Database error" };
   }
 }

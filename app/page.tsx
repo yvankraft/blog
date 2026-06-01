@@ -6,8 +6,9 @@ import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { MessageSquare, Share2, MoreHorizontal, ThumbsUp } from "lucide-react";
+import { Share2, MoreHorizontal, ThumbsUp } from "lucide-react";
 import LikeButton from "./home/LikeBuuton";
+import Commentaires from "./home/Commentaires";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,11 @@ async function getPosts(currentUserId?: string) {
       _count: { select: { comments: true, likes: true } },
       // On vérifie si un like existe pour cet utilisateur précis
       likes: currentUserId ? { where: { userId: currentUserId } } : false,
+      // Inclure les commentaires avec leurs auteurs pour le rendu de la section de commentaires
+      comments: {
+        orderBy: { createdAt: "desc" },
+        include: { author: true },
+      },
     },
   });
 }
@@ -169,10 +175,12 @@ export default async function Page() {
                             post.likes ? post.likes.length > 0 : false
                           }
                         />
-                        <button className="flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2 py-1.5 rounded transition">
-                          <MessageSquare size={16} />
-                          <span>{post._count.comments} Comments</span>
-                        </button>
+                        <Commentaires
+                          postId={post.id}
+                          postTitle={post.title}
+                          initialComments={post.comments}
+                          commentsCount={post._count.comments}
+                        />
 
                         <button className="flex items-center gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2 py-1.5 rounded transition">
                           <Share2 size={16} />
