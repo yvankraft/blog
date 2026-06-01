@@ -19,6 +19,33 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          // Si c'est une connexion sociale et qu'il n'a pas de username
+          if (!user.username) {
+            const baseUsername = user.email.split("@")[0];
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+
+            // On retourne l'objet utilisateur enrichi avec le nouveau username
+            return {
+              data: {
+                ...user,
+                username: `${baseUsername}_${randomSuffix}`,
+              },
+            };
+          }
+          // S'il a déjà un username (ex: inscription classique), on ne touche à rien
+          return {
+            data: user,
+          };
+        },
+      },
+    },
+  },
+
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
   appName: "Les Talk",
@@ -158,11 +185,8 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
     tiktok: {
+      clientKey: process.env.TIKTOK_CLIENT_KEY as string,
       clientSecret: process.env.TIKTOK_CLIENT_SECRET as string,
-      clientKey: process.env.TIKTOK_CLIENT_ID as string,
-      authorizationUrl: "https://www.tiktok.com/v2/auth/authorize/",
-      tokenUrl: "https://open.tiktokapis.com/v2/oauth/token/",
-      userProfileUrl: "https://open.tiktokapis.com/v2/user/info/",
     },
   },
 });

@@ -5,14 +5,14 @@ export const authClient = createAuthClient({
 });
 
 // Séparation en fonctions distinctes pour tes boutons
-const signInWithGoogle = async () => {
+export const signInWithGoogle = async () => {
   await authClient.signIn.social({
     provider: "google", // Un seul fournisseur ici
     callbackURL: "/",
   });
 };
 
-const signInWithTiktok = async () => {
+export const signInWithTiktok = async () => {
   await authClient.signIn.social({
     provider: "tiktok", // Nécessite d'avoir configuré le plugin générique dans ton backend
     callbackURL: "/",

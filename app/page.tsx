@@ -1,5 +1,6 @@
 import Navbar from "./components/Navbar";
 import FirstSideMenu from "./home/firstSideMenu";
+import AddPost from "./home/addPost";
 
 export default function Page() {
   return (
@@ -20,6 +21,7 @@ export default function Page() {
             <div className="h-[1200px] text-zinc-500 dark:text-zinc-400 text-sm">
               (Contenu pour tester le défilement interne...)
             </div>
+            <AddPost />
           </main>
 
           {/* Les recommandations à droite du flux */}
