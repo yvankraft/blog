@@ -74,7 +74,7 @@ export default function page() {
     try {
       await authClient.signIn.social({
         provider,
-        callbackURL: "/", // La page où l'utilisateur est redirigé après la connexion
+        callbackURL: `${window.location.origin}/onboarding`, // La page où l'utilisateur est redirigé après la connexion
       });
     } catch (error) {
       console.error(`Erreur de connexion avec ${provider}:`, error);
