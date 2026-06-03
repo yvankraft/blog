@@ -55,7 +55,7 @@ export default function LikeButton({
   }, [initialHasLiked, initialLikesCount]);
 
   return (
-    <div className=" bg-zinc-400 px-4 py-2 rounded-2xl active:scale-95 dark:bg-zinc-900/40 flex justify-center items-center pt-3 gap-2 select-none border-r border-zinc-100 dark:border-zinc-900/50">
+    <div className="px-4 py-1 rounded-2xl active:scale-95 flex justify-center items-center gap-1 select-none transition">
       <button
         onClick={handleLike}
         className={`p-1 rounded transition ${
@@ -65,7 +65,7 @@ export default function LikeButton({
         }`}
       >
         <ThumbsUp
-          size={22}
+          size={16}
           className={`text-zinc-800 dark:text-zinc-200 z-10 ${
             liked ? "fill-current text-blue-500" : "fill-none"
           } `}
@@ -73,7 +73,7 @@ export default function LikeButton({
       </button>
 
       <span
-        className={`text-sm font-bold z-10 ${liked ? "text-blue-500" : "text-zinc-900 dark:text-zinc-300"}`}
+        className={`text-xs font-bold z-10 ${liked ? "text-blue-500" : "text-zinc-900 dark:text-zinc-300"}`}
       >
         {count}
       </span>

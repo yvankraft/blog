@@ -35,6 +35,16 @@ export const auth = betterAuth({
                 ...user,
                 username: `${baseUsername}_${randomSuffix}`,
               },
+              additionalFields: {
+                coverImage: {
+                  type: "string",
+                  required: false,
+                },
+                username: {
+                  type: "string",
+                  required: false,
+                },
+              },
             };
           }
           // S'il a déjà un username (ex: inscription classique), on ne touche à rien

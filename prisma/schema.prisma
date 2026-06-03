@@ -16,6 +16,7 @@ model User {
   email         String    @unique
   emailVerified Boolean
   image         String?
+  coverImage    String?   //photo de couverture
   lastActiveAt  DateTime? // pour suivre la presence en ligne de l'utilisateur
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -41,6 +42,11 @@ model User {
   messages      Message[]
   callParticipants CallParticipant[]
   lives         LiveStream[]
+
+  //relation d'amities avec d'autres utilisateur
+  sentRequests     FriendRequest[]  @relation("SentRequests")
+  receivedRequests FriendRequest[]  @relation("ReceivedRequests")
+  preference       userPreference?
 
   @@map("user")
   @@index([isOnline]) // Optimise la récupération des amis en ligne
@@ -277,4 +283,24 @@ model LiveStream {
   host        User      @relation(fields: [hostId], references: [id], onDelete: Cascade)
 
   @@index([isLive, createdAt(sort: Desc)]) // Optimise la récupération de la liste des Lives en cours en première page
+}
+
+model FriendRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId]) // Empêche les doublons de demandes
+}
+
+model userPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  tags      String[] // Ex: ["TypeScript", "Next.js", "Gaming", "React Native"]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

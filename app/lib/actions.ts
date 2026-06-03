@@ -127,3 +127,88 @@ export async function createCommentAction({
     return { success: false, error: "Database error" };
   }
 }
+
+// Action pour supprimer un post
+export async function deletePostAction({ postId }: { postId: string }) {
+  //verifions si l'utilisateur est connecté
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || !session.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+  try {
+    // Vérifions si le post existe et appartient à l'utilisateur
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return { success: false, error: "Post not found" };
+    }
+
+    if (post.authorId !== session.user.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Supprimons le post
+    await prisma.post.delete({
+      where: { id: postId },
+    });
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+// Action pour updater la photo de profil
+export async function updateProfilePictureAction({
+  type,
+  url,
+}: {
+  type: "profilePicture" | "coverPhoto";
+  url: string;
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || !session.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+  try {
+    const dataToUpdate =
+      type === "profilePicture" ? { profilePicture: url } : { coverPhoto: url };
+
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: dataToUpdate,
+    });
+    revalidatePath("/profile");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating profile picture:", error);
+    return { success: false, error: "Database error" };
+  }
+}
+
+//actions pour stockage des preferences de l'utilisateur
+export async function savePreferencesAction({ tags }: { tags: string[] }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session || !session.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    await prisma.userPreference.upsert({
+      where: { userId: session.user.id },
+      update: { tags },
+      create: {
+        userId: session.user.id,
+        tags,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error saving preferences:", error);
+    return { success: false, error: "Database error" };
+  }
+}

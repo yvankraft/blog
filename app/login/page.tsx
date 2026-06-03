@@ -65,7 +65,7 @@ export default function page() {
 
       triggerModal(userFriendlyMessage);
     } else {
-      router.push("/");
+      router.push("/onboarding"); // Redirection vers la page d'onboarding après une connexion réussie
     }
   };
 

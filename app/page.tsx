@@ -6,9 +6,10 @@ import { auth } from "@/app/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { Share2, MoreHorizontal, ThumbsUp } from "lucide-react";
+import { Share2, MoreHorizontal } from "lucide-react";
 import LikeButton from "./home/LikeBuuton";
 import Commentaires from "./home/Commentaires";
+import AutoplayVideo from "./home/AutoplayVideo";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,21 @@ async function likePost(postId: string) {
 
 export default async function Page() {
   const posts = await getPosts();
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  // Si l'utilisateur n'est pas connecté, redirigeons-le vers la page de connexion
+  if (!session || !session.user) {
+    redirect("/login");
+  }
+  // Si l'utilisateur est connecté mais n'a pas encore rempli son sondage, redirigeons-le vers la page d'onboarding
+  const hasPreferences = await prisma.userPreference.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  if (!hasPreferences) {
+    redirect("/onboarding");
+  }
+
   return (
     // Fond slate-50 (clair) qui devient #0d0e12 (sombre)
     <div className="h-screen w-full bg-slate-50 dark:bg-[#0d0e12] text-zinc-900 dark:text-white flex overflow-hidden p-3 md:p-4 gap-4 antialiased">
@@ -154,13 +170,7 @@ export default async function Page() {
                                 className="w-full h-full object-contain"
                               />
                             ) : (
-                              <video
-                                autoPlay
-                                loop
-                                src={post.mediaUrl}
-                                controls
-                                className="w-full h-full object-contain"
-                              />
+                              <AutoplayVideo src={post.mediaUrl} />
                             )}
                           </div>
                         )}
