@@ -18,6 +18,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Les Talks",
   description: "A simple blog built with Next.js",
+  verification: {
+    other: {
+      "tiktok-developers-site-verification": [
+        "C418urr6NPyWSWcflGXR9ctgEi1p2zr0",
+      ],
+    },
+  },
 };
 
 export default async function RootLayout({
