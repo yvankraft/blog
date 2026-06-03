@@ -98,10 +98,10 @@ export default async function Page() {
 
   return (
     // Fond slate-50 (clair) qui devient #0d0e12 (sombre)
-    <div className="h-screen w-full bg-slate-50 dark:bg-[#0d0e12] text-zinc-900 dark:text-white flex overflow-hidden p-3 md:p-4 gap-4 antialiased">
+<div className="h-screen w-full bg-slate-50 dark:bg-[#0d0e12] text-zinc-900 dark:text-white flex overflow-hidden p-0 sm:p-3 md:p-4 gap-4 antialiased">
       <FirstSideMenu />
 
-      <div className="relative flex-1 min-h-0 flex flex-col">
+      <div className="relative flex-1 min-h-0 flex flex-col w-screen ">
         <Navbar />
 
         {/* Zone de contenu sous la Navbar */}
@@ -162,7 +162,7 @@ export default async function Page() {
 
                         {/* Media Frame */}
                         {post.mediaUrl && (
-                          <div className="mt-3 relative w-full aspect-video border-b border-zinc-200 dark:border-zinc-800  overflow-hidden bg-none">
+                          <div className="mt-3 relative w-full bg-gray-400 border-b border-zinc-200 dark:border-zinc-800  overflow-hidden bg-none">
                             {post.mediaType === "IMAGE" ? (
                               <img
                                 src={post.mediaUrl}

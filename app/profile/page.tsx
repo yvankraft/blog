@@ -94,15 +94,6 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
-
-          {/* Profile Card / Settings */}
-          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 md:p-8 bg-gray-50/50 dark:bg-zinc-900/20 backdrop-blur">
-            <h1 className="font-semibold text-2xl tracking-tight mb-6">
-              Settings
-            </h1>
-            <ProfileActions user={user} />
-          </div>
-
           {/* Section Publications */}
           <div className="mt-12">
             <h2 className="font-medium text-lg tracking-tight mb-4">
@@ -140,6 +131,13 @@ export default async function ProfilePage() {
                 ))}
               </div>
             )}
+          </div>
+          {/* Profile Card / Settings */}
+          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-6 md:p-8 bg-gray-50/50 dark:bg-zinc-900/20 backdrop-blur">
+            <h1 className="font-semibold text-2xl tracking-tight mb-6">
+              Settings
+            </h1>
+            <ProfileActions user={user} />
           </div>
         </div>
       </div>
