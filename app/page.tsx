@@ -85,7 +85,7 @@ export default async function Page() {
 
   // Si l'utilisateur n'est pas connecté, redirigeons-le vers la page de connexion
   if (!session || !session.user) {
-    redirect("/");
+    redirect("/login");
   }
   // Si l'utilisateur est connecté mais n'a pas encore rempli son sondage, redirigeons-le vers la page d'onboarding
   const hasPreferences = await prisma.userPreference.findUnique({
