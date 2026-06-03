@@ -16,9 +16,11 @@ export default async function FirstSideMenu() {
     },
   });
 
-  const activeUsers = users.map((u) => ({
+  const activeUsers = users.map((u: any) => ({
     ...u,
-    isOnline: u.lastActiveAt ? u.lastActiveAt > fiveMinutesAgo : false,
+    isOnline: u.lastActiveAt
+      ? new Date(u.lastActiveAt) > fiveMinutesAgo
+      : false,
   }));
 
   return (
